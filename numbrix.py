@@ -32,6 +32,11 @@ class Board:
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
         return Board.matrix[row][col]
+
+    def set_number(self, row: int, col: int, number: int):
+        """ Coloca o valor na respetiva posição do tabuleiro. """
+        Board.matrix[row][col] = number
+        
     
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """ Devolve os valores imediatamente abaixo e acima, 
@@ -87,13 +92,17 @@ class Board:
 
         return board
 
-    # TODO: outros metodos da classe
+    def toString(self):
+        for l in Board.matrix:
+            for i in l:
+                print(i,"\t", end = " ")
+            print("\n", end = "")
 
 
 class Numbrix(Problem):
     def __init__(self, board: Board):
         """ O construtor especifica o estado inicial. """
-        # TODO
+        self.board = board
         pass
 
     def actions(self, state: NumbrixState):
@@ -107,8 +116,9 @@ class Numbrix(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de 
         self.actions(state). """
-        # TODO
-        pass
+        new_board = state.board
+        new_board.set_number(action[0],action[1],action[2])
+        return NumbrixState(new_board)
 
     def goal_test(self, state: NumbrixState):
         """ Retorna True se e só se o estado passado como argumento é
@@ -133,5 +143,8 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     filepath = sys.argv[1]
     board = Board.parse_instance(filepath)
-    print(board.adjacent_horizontal_numbers(1, 1))
-    pass
+    problem = Numbrix(board)
+    initial_state = NumbrixState(board)
+    print(initial_state.board.get_number(2, 2))
+    result_state = problem.result(initial_state, (2, 2, 1))
+    print("2,2: ",result_state.board.get_number(2, 2))
