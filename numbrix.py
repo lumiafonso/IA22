@@ -136,17 +136,21 @@ class Numbrix(Problem):
         """ Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro 
         estão preenchidas com uma sequência de números adjacentes. """
+        failed = False
         for i in range (state.board.size):
             for j in range (state.board.size):
+                if failed:
+                    break
                 if state.board.get_number(i,j) == 0:
                     hor = state.board.adjacent_horizontal_numbers(i,j)
                     vert = state.board.adjacent_vertical_numbers(i,j)
-                    for adj in hor+vert:
+                    for adj in hor:
                         if adj != None and adj != 0:
-                            if adj-1 != 0 and adj-1 not in self.used_numbers:
-                                actions_list.append((i,j,adj-1))
-                            if adj+1 not in self.used_numbers and adj+1 <= state.board.size ** 2:
-                                actions_list.append((i,j,adj+1))
+                            if (adj != state.board.get_number(i,j)+1 or adj != state.board.get_number(i,j)-1):
+                                failed = True
+            if failed:
+                break
+                    
 
     def h(self, node: Node):
         """ Função heuristica utilizada para a procura A*. """
