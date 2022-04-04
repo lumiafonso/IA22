@@ -9,8 +9,6 @@
 import sys
 from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search
 
-matrix = []
-size = 0
 
 class NumbrixState:
     state_id = 0
@@ -28,25 +26,27 @@ class NumbrixState:
 
 class Board:
     """ Representação interna de um tabuleiro de Numbrix. """
+    matrix = []
+    size = 0
     
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
-        return matrix[row][col]
+        return Board.matrix[row][col]
     
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """ Devolve os valores imediatamente abaixo e acima, 
         respectivamente. """
         vert = []
         global size
-        if(row+1 > size-1):
+        if(row+1 > Board.size-1):
             vert.append(None)
         else:
-            vert.append(matrix[row+1][col])
+            vert.append(Board.matrix[row+1][col])
 
         if(row-1 < 0):
             vert.append(None)
         else:
-            vert.append(matrix[row-1][col])
+            vert.append(Board.matrix[row-1][col])
         
         return vert 
     
@@ -54,16 +54,15 @@ class Board:
         """ Devolve os valores imediatamente à esquerda e à direita, 
         respectivamente. """
         hor = []
-        global size
         if(col-1 < 0):
             hor.append(None)
         else:
-            hor.append(matrix[row][col-1])
+            hor.append(Board.matrix[row][col-1])
 
-        if(col+1 > size-1):
+        if(col+1 > Board.size-1):
             hor.append(None)
         else:
-            hor.append(matrix[row][col+1])
+            hor.append(Board.matrix[row][col+1])
         
         return hor
     
@@ -71,20 +70,19 @@ class Board:
     def parse_instance(filename: str):
         """ Lê o ficheiro cujo caminho é passado como argumento e retorna
         uma instância da classe Board. """
-        global size
         board = Board()
         f = open(filepath,"r")
 
         with open(filepath) as f:
             lines = f.readlines()
-        size = int(lines[0])
+        Board.size = int(lines[0])
 
         row = []
-        for i in range(1,size+1):
+        for i in range(1,Board.size+1):
             for j in range(len(lines[i])):
                 if(lines[i][j].isnumeric()):
                     row.append(int(lines[i][j]))
-            matrix.append(row)
+            Board.matrix.append(row)
             row = []
 
         return board
@@ -135,4 +133,5 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     filepath = sys.argv[1]
     board = Board.parse_instance(filepath)
+    print(board.adjacent_horizontal_numbers(1, 1))
     pass
