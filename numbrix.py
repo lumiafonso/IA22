@@ -103,13 +103,25 @@ class Numbrix(Problem):
     def __init__(self, board: Board):
         """ O construtor especifica o estado inicial. """
         self.board = board
-        pass
+        self.used_numbers = self.get_used_numbers()
 
     def actions(self, state: NumbrixState):
         """ Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento. """
-        # TODO
-        pass
+        actions_list = []
+        for i in range (state.board.size):
+            for j in range (state.board.size):
+                if state.board.get_number(i,j) == 0:
+                    hor = state.board.adjacent_horizontal_numbers(i,j)
+                    vert = state.board.adjacent_vertical_numbers(i,j)
+                    for adj in hor+vert:
+                        if adj != None and adj != 0:
+                            if adj-1 != 0 and adj-1 not in self.used_numbers:
+                                actions_list.append((i,j,adj-1))
+                            if adj+1 not in self.used_numbers and adj+1 <= state.board.size ** 2:
+                                actions_list.append((i,j,adj+1))
+
+        return actions_list
 
     def result(self, state: NumbrixState, action):
         """ Retorna o estado resultante de executar a 'action' sobre
@@ -124,13 +136,30 @@ class Numbrix(Problem):
         """ Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro 
         estão preenchidas com uma sequência de números adjacentes. """
-        # TODO
-        pass
+        for i in range (state.board.size):
+            for j in range (state.board.size):
+                if state.board.get_number(i,j) == 0:
+                    hor = state.board.adjacent_horizontal_numbers(i,j)
+                    vert = state.board.adjacent_vertical_numbers(i,j)
+                    for adj in hor+vert:
+                        if adj != None and adj != 0:
+                            if adj-1 != 0 and adj-1 not in self.used_numbers:
+                                actions_list.append((i,j,adj-1))
+                            if adj+1 not in self.used_numbers and adj+1 <= state.board.size ** 2:
+                                actions_list.append((i,j,adj+1))
 
     def h(self, node: Node):
         """ Função heuristica utilizada para a procura A*. """
         # TODO
         pass
+
+    def get_used_numbers(self):
+        used_numbers = []
+        for i in self.board.matrix:
+            for j in i:
+                if j > 0:
+                    used_numbers.append(j)
+        return used_numbers
     
     # TODO: outros metodos da classe
 
@@ -146,5 +175,4 @@ if __name__ == "__main__":
     problem = Numbrix(board)
     initial_state = NumbrixState(board)
     print(initial_state.board.get_number(2, 2))
-    result_state = problem.result(initial_state, (2, 2, 1))
-    print("2,2: ",result_state.board.get_number(2, 2))
+    print(problem.actions(initial_state))
