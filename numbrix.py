@@ -72,6 +72,7 @@ class Board:
         """ Lê o ficheiro cujo caminho é passado como argumento e retorna
         uma instância da classe Board. """
         global size
+        board = Board()
         f = open(filepath,"r")
 
         with open(filepath) as f:
@@ -86,7 +87,7 @@ class Board:
             matrix.append(row)
             row = []
 
-        pass
+        return board
 
     # TODO: outros metodos da classe
 
@@ -132,7 +133,6 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
-    board = Board()
     filepath = sys.argv[1]
-    board.parse_instance(filepath)
+    board = Board.parse_instance(filepath)
     pass
