@@ -84,11 +84,11 @@ class Board:
 
         row = []
         for i in range(1,Board.size+1):
-            for j in range(len(lines[i])):
-                if(lines[i][j].isnumeric()):
-                    row.append(int(lines[i][j]))
-            Board.matrix.append(row)
-            row = []
+            row = lines[i].split()
+            new_row = []
+            for n in row:
+                new_row.append(int(n))
+            Board.matrix.append(new_row)
 
         return board
 
@@ -136,22 +136,34 @@ class Numbrix(Problem):
         """ Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro 
         estão preenchidas com uma sequência de números adjacentes. """
-        failed = False
+        pos = ()
         for i in range (state.board.size):
             for j in range (state.board.size):
-                if failed:
-                    break
-                if state.board.get_number(i,j) == 0:
-                    hor = state.board.adjacent_horizontal_numbers(i,j)
-                    vert = state.board.adjacent_vertical_numbers(i,j)
-                    for adj in hor:
-                        if adj != None and adj != 0:
-                            if (adj != state.board.get_number(i,j)+1 or adj != state.board.get_number(i,j)-1):
-                                failed = True
-            if failed:
-                break
-                    
-
+                if state.board.get_number(i,j) == 1:
+                    pos = (i,j)
+                    while (state.board.get_number(pos[0],pos[1]) != state.board.size**2):
+                        hor = state.board.adjacent_horizontal_numbers(pos[0],pos[1])
+                        vert = state.board.adjacent_vertical_numbers(pos[0],pos[1])
+                        adj = hor+vert
+                        new_pos = pos
+                        for adj_index in range(len(adj)):
+                            if adj[adj_index] == state.board.get_number(i,j) + 1:
+                                if adj_index == 0:
+                                    j-=1
+                                elif adj_index == 1:
+                                    j+=1
+                                elif adj_index == 2:
+                                    i+=1
+                                elif adj_index == 3:
+                                    i-=1
+                                new_pos = (i,j)
+                                break
+                        if new_pos == pos:
+                            return False
+                        pos = new_pos
+                    return True
+        return False
+                        
     def h(self, node: Node):
         """ Função heuristica utilizada para a procura A*. """
         # TODO
@@ -178,5 +190,5 @@ if __name__ == "__main__":
     board = Board.parse_instance(filepath)
     problem = Numbrix(board)
     initial_state = NumbrixState(board)
-    print(initial_state.board.get_number(2, 2))
-    print(problem.actions(initial_state))
+    board.toString()
+    print(problem.goal_test(initial_state))
