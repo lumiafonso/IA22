@@ -28,6 +28,7 @@ class Board:
     """ Representação interna de um tabuleiro de Numbrix. """
     matrix = []
     size = 0
+    not_used_numbers = []
     
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
@@ -76,9 +77,9 @@ class Board:
         """ Lê o ficheiro cujo caminho é passado como argumento e retorna
         uma instância da classe Board. """
         board = Board()
-        f = open(filepath,"r")
+        f = open(filename,"r")
 
-        with open(filepath) as f:
+        with open(filename) as f:
             lines = f.readlines()
         Board.size = int(lines[0])
 
@@ -89,21 +90,31 @@ class Board:
             for n in row:
                 new_row.append(int(n))
             Board.matrix.append(new_row)
+        
+        for i in range(1, Board.size+1):
+            Board.not_used_numbers.append(i)
+
+        for i in Board.matrix:
+            for j in i:
+                if (j > 0) and (j in Board.not_used_numbers):
+                    Board.not_used_numbers.remove(j)
 
         return board
 
-    def toString(self):
+    def to_string(self):
+        output = ""        
         for l in Board.matrix:
             for i in l:
-                print(i,"\t", end = " ")
-            print("\n", end = "")
+                output += str(i) + "\t"
+            if l != Board.matrix[len(Board.matrix)-1]:
+                output += "\n"
+        return output
 
 
 class Numbrix(Problem):
     def __init__(self, board: Board):
         """ O construtor especifica o estado inicial. """
-        self.board = board
-        self.used_numbers = self.get_used_numbers()
+        self.initial = NumbrixState(board)
 
     def actions(self, state: NumbrixState):
         """ Retorna uma lista de ações que podem ser executadas a
@@ -116,9 +127,9 @@ class Numbrix(Problem):
                     vert = state.board.adjacent_vertical_numbers(i,j)
                     for adj in hor+vert:
                         if adj != None and adj != 0:
-                            if adj-1 != 0 and adj-1 not in self.used_numbers:
+                            if adj-1 != 0 and adj-1 in state.board.not_used_numbers:
                                 actions_list.append((i,j,adj-1))
-                            if adj+1 not in self.used_numbers and adj+1 <= state.board.size ** 2:
+                            if adj+1 in state.board.not_used_numbers and adj+1 <= state.board.size ** 2:
                                 actions_list.append((i,j,adj+1))
 
         return actions_list
@@ -168,14 +179,6 @@ class Numbrix(Problem):
         """ Função heuristica utilizada para a procura A*. """
         # TODO
         pass
-
-    def get_used_numbers(self):
-        used_numbers = []
-        for i in self.board.matrix:
-            for j in i:
-                if j > 0:
-                    used_numbers.append(j)
-        return used_numbers
     
     # TODO: outros metodos da classe
 
@@ -186,9 +189,16 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
+    
     filepath = sys.argv[1]
+
+    # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
     board = Board.parse_instance(filepath)
+    # Criar uma instância de Numbrix:
     problem = Numbrix(board)
-    initial_state = NumbrixState(board)
-    board.toString()
-    print(problem.goal_test(initial_state))
+    # Obter o nó solução usando a procura BFS:
+    goal_node = breadth_first_tree_search(problem)
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board.to_string(), sep="")
+    
