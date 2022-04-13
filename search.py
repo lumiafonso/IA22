@@ -188,7 +188,6 @@ def breadth_first_tree_search(problem):
 
     while frontier:
         node = frontier.popleft()
-        print(node.state.board.to_string(), "\n")
         if problem.goal_test(node.state):
             return node
         frontier.extend(node.expand(problem))

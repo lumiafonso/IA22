@@ -26,17 +26,19 @@ class NumbrixState:
 
 class Board:
     """ Representação interna de um tabuleiro de Numbrix. """
-    matrix = []
-    size = 0
-    not_used_numbers = []
+
+    def __init__(self):
+        self.matrix = []
+        self.size = 0
+        self.not_used_numbers = []
     
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
-        return Board.matrix[row][col]
+        return board.matrix[row][col]
 
     def set_number(self, row: int, col: int, number: int):
         """ Coloca o valor na respetiva posição do tabuleiro. """
-        Board.matrix[row][col] = number
+        board.matrix[row][col] = number
         
     
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
@@ -44,15 +46,15 @@ class Board:
         respectivamente. """
         vert = []
         global size
-        if(row+1 > Board.size-1):
+        if(row+1 > board.size-1):
             vert.append(None)
         else:
-            vert.append(Board.matrix[row+1][col])
+            vert.append(board.matrix[row+1][col])
 
         if(row-1 < 0):
             vert.append(None)
         else:
-            vert.append(Board.matrix[row-1][col])
+            vert.append(board.matrix[row-1][col])
         
         return vert 
     
@@ -63,12 +65,12 @@ class Board:
         if(col-1 < 0):
             hor.append(None)
         else:
-            hor.append(Board.matrix[row][col-1])
+            hor.append(board.matrix[row][col-1])
 
-        if(col+1 > Board.size-1):
+        if(col+1 > board.size-1):
             hor.append(None)
         else:
-            hor.append(Board.matrix[row][col+1])
+            hor.append(board.matrix[row][col+1])
         
         return hor
     
@@ -81,32 +83,32 @@ class Board:
 
         with open(filename) as f:
             lines = f.readlines()
-        Board.size = int(lines[0])
+        board.size = int(lines[0])
 
         row = []
-        for i in range(1,Board.size+1):
+        for i in range(1, board.size + 1):
             row = lines[i].split()
             new_row = []
             for n in row:
                 new_row.append(int(n))
-            Board.matrix.append(new_row)
+            board.matrix.append(new_row)
         
-        for i in range(1, Board.size+1):
-            Board.not_used_numbers.append(i)
+        for i in range(1, (board.size**2)+1):
+            board.not_used_numbers.append(i)
 
-        for i in Board.matrix:
+        for i in board.matrix:
             for j in i:
-                if (j > 0) and (j in Board.not_used_numbers):
-                    Board.not_used_numbers.remove(j)
+                if (j > 0) and (j in board.not_used_numbers):
+                    board.not_used_numbers.remove(j)
 
         return board
 
     def to_string(self):
         output = ""        
-        for l in Board.matrix:
+        for l in board.matrix:
             for i in l:
                 output += str(i) + "\t"
-            if l != Board.matrix[len(Board.matrix)-1]:
+            if l != board.matrix[len(board.matrix)-1]:
                 output += "\n"
         return output
 
@@ -120,15 +122,16 @@ class Numbrix(Problem):
         """ Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento. """
         actions_list = []
-        for i in range (state.board.size):
-            for j in range (state.board.size):
-                if state.board.get_number(i,j) == 0:
+
+        for num in state.board.not_used_numbers:
+            for i in range (state.board.size):
+                for j in range (state.board.size):
+                    if state.board.get_number(i,j) != 0:
+                        continue
                     hor = state.board.adjacent_horizontal_numbers(i,j)
                     vert = state.board.adjacent_vertical_numbers(i,j)
                     for adj in hor+vert:
                         if adj != None and adj != 0:
-                            if adj-1 != 0 and adj-1 in state.board.not_used_numbers:
-                                actions_list.append((i,j,adj-1))
                             if adj+1 in state.board.not_used_numbers and adj+1 <= state.board.size ** 2:
                                 actions_list.append((i,j,adj+1))
 
@@ -141,6 +144,8 @@ class Numbrix(Problem):
         self.actions(state). """
         new_board = state.board
         new_board.set_number(action[0],action[1],action[2])
+        if (action[2] not in new_board.not_used_numbers):
+            new_board.not_used_numbers.remove(action[2])
         return NumbrixState(new_board)
 
     def goal_test(self, state: NumbrixState):
