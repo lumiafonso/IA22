@@ -98,12 +98,15 @@ class Board:
         return board
 
     def to_string(self):
-        output = ""        
-        for l in board.matrix:
+        output = ""
+        counter = 1
+        for l in self.matrix:
+            print("linha:",l)
             for i in l:
                 output += str(i) + "\t"
-            if l != board.matrix[len(board.matrix)-1]:
+            if counter != self.size:
                 output += "\n"
+            counter +=1
         return output
 
 
@@ -238,8 +241,9 @@ if __name__ == "__main__":
     # Criar uma instância de Numbrix:
     problem = Numbrix(board)
     state = NumbrixState(board)
+    print(state.board.to_string())
     # Obter o nó solução usando a procura:
-    goal_node = depth_first_tree_search(problem)
+    """ goal_node = breadth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     print("Is goal?", problem.goal_test(goal_node.state))
-    print("Solution:\n", goal_node.state.board.to_string(), sep="")
+    print("Solution:\n", goal_node.state.board.to_string(), sep="") """
