@@ -101,7 +101,6 @@ class Board:
         output = ""
         counter = 1
         for l in self.matrix:
-            print("linha:",l)
             for i in l:
                 output += str(i) + "\t"
             if counter != self.size:
