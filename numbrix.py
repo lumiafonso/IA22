@@ -8,6 +8,7 @@
 
 import sys
 from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search
+from copy import deepcopy
 
 
 class NumbrixState:
@@ -34,11 +35,11 @@ class Board:
     
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
-        return board.matrix[row][col]
+        return self.matrix[row][col]
 
     def set_number(self, row: int, col: int, number: int):
         """ Coloca o valor na respetiva posição do tabuleiro. """
-        board.matrix[row][col] = number
+        self.matrix[row][col] = number
         
     
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
@@ -46,15 +47,15 @@ class Board:
         respectivamente. """
         vert = []
         global size
-        if(row+1 > board.size-1):
+        if(row+1 > self.size-1):
             vert.append(None)
         else:
-            vert.append(board.matrix[row+1][col])
+            vert.append(self.matrix[row+1][col])
 
         if(row-1 < 0):
             vert.append(None)
         else:
-            vert.append(board.matrix[row-1][col])
+            vert.append(self.matrix[row-1][col])
         
         return vert 
     
@@ -65,12 +66,12 @@ class Board:
         if(col-1 < 0):
             hor.append(None)
         else:
-            hor.append(board.matrix[row][col-1])
+            hor.append(self.matrix[row][col-1])
 
-        if(col+1 > board.size-1):
+        if(col+1 > self.size-1):
             hor.append(None)
         else:
-            hor.append(board.matrix[row][col+1])
+            hor.append(self.matrix[row][col+1])
         
         return hor
     
@@ -102,10 +103,12 @@ class Board:
         counter = 1
         for l in self.matrix:
             for i in l:
-                output += str(i) + "\t"
-            if counter != self.size:
-                output += "\n"
-            counter +=1
+                if counter == self.size:
+                    output += str(i) + "\n"
+                else:
+                    output += str(i) + "\t"
+                counter +=1
+            counter = 1
         return output
 
 
@@ -113,7 +116,7 @@ class Numbrix(Problem):
     def __init__(self, board: Board):
         """ O construtor especifica o estado inicial. """
         self.initial = NumbrixState(board)
-
+    
     def actions(self, state: NumbrixState):
         """ Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento. """
@@ -127,36 +130,25 @@ class Numbrix(Problem):
                     #se ha dois numeros consecutivos ja sabe qual valor meter
                     value = self.two_consecutive_nums(adj_list) 
 
-                    print("pos: ",i,",",j)
-
-                    if (value != 0):
-                        print("numeros consecutivos")
-                        """ self.update_actions(actions_list, value) """
+                    if (value != 0) and (value not in state.board.used_numbers):
                         actions_list.append((i,j,value))
                     #se nao ha vizinhos 0, para chegar aqui quer dizer que vai ser ou 1 ou size**2
                     #falta apagar os da actions list caso se faca um append antes do else
                     elif (0 not in adj_list):
-                        print("nao tem zeros ao lado")
                         if 2 in adj_list:
-                            """ self.update_actions(actions_list,1) """
-                            actions_list.append((i,j,1))
+                            if(1 not in state.board.used_numbers):
+                                actions_list.append((i,j,1))
                         elif state.board.size**2-1 in adj_list:
-                            """ self.update_actions(actions_list,state.board.size**2) """
-                            actions_list.append((i,j,state.board.size**2))
-                    elif (all(v == 0 or v == None for v in adj_list)):
-                        for x in range(1,state.board.size**2+1):
-                            if x not in state.board.used_numbers:
-                                actions_list.append((i,j,x))
-                    else:
-                        print("normal")
-                        print(state.board.used_numbers)
-                        for adj in adj_list:
-                            if adj != None and adj != 0:
-                                if (adj-1 != 0) and (adj-1 not in state.board.used_numbers):
-                                    actions_list.append((i,j,adj-1))
-                                if (adj+1 <= state.board.size ** 2) and (adj+1 not in state.board.used_numbers):
-                                    actions_list.append((i,j,adj+1))
-                    print(actions_list)
+                            if(state.board.size**2 not in state.board.used_numbers):
+                                actions_list.append((i,j,state.board.size**2))
+                        return actions_list
+
+                    for x in range(1,state.board.size**2+1):
+                        if x not in state.board.used_numbers:
+                            if x+1 in adj_list or x+1 not in state.board.used_numbers:
+                                if x-1 in adj_list or x-1 not in state.board.used_numbers:
+                                    if (i,j,x) not in actions_list:
+                                        actions_list.append((i,j,x))
 
                     return actions_list
 
@@ -165,12 +157,22 @@ class Numbrix(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de 
         self.actions(state). """
-        new_board = state.board
+
+        new_board = deepcopy(state.board)
+
+        """ print("action:",action) """
+    
         old_num = new_board.get_number(action[0],action[1])
+        
         if old_num != 0:
             new_board.used_numbers.remove(old_num)
+            
         new_board.set_number(action[0],action[1],action[2])
+
+        """ print("new_board\n"+new_board.to_string()) """
+
         new_board.used_numbers.append(action[2])
+
         return NumbrixState(new_board)
 
     def goal_test(self, state: NumbrixState):
@@ -220,11 +222,6 @@ class Numbrix(Problem):
                         return i+1
         return 0
 
-    def update_actions(self, actions_list, value):
-        for action in actions_list:
-            if action[2] == value:
-                actions_list.remove(action)
-
 
 if __name__ == "__main__":
     # TODO:
@@ -234,15 +231,11 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     
     filepath = sys.argv[1]
-
     # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
     board = Board.parse_instance(filepath)
     # Criar uma instância de Numbrix:
     problem = Numbrix(board)
-    state = NumbrixState(board)
-    print(state.board.to_string())
     # Obter o nó solução usando a procura:
-    """ goal_node = breadth_first_tree_search(problem)
+    goal_node = breadth_first_tree_search(problem)
     # Verificar se foi atingida a solução
-    print("Is goal?", problem.goal_test(goal_node.state))
-    print("Solution:\n", goal_node.state.board.to_string(), sep="") """
+    print("Solution:\n", goal_node.state.board.to_string(), sep="")
