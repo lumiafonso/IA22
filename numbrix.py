@@ -9,16 +9,17 @@
 import sys
 from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search
 from copy import deepcopy
-
+import cProfile
+import pstats
 
 class NumbrixState:
     state_id = 0
-
+    
     def __init__(self, board):
         self.board = board
         self.id = NumbrixState.state_id
         NumbrixState.state_id += 1
-
+    
     def __lt__(self, other):
         return self.id < other.id
         
@@ -27,7 +28,7 @@ class NumbrixState:
 
 class Board:
     """ Representação interna de um tabuleiro de Numbrix. """
-
+    
     def __init__(self):
         self.matrix = []
         self.size = 0
@@ -36,7 +37,7 @@ class Board:
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
         return self.matrix[row][col]
-
+    
     def set_number(self, row: int, col: int, number: int):
         """ Coloca o valor na respetiva posição do tabuleiro. """
         self.matrix[row][col] = number
@@ -97,7 +98,7 @@ class Board:
             board.matrix.append(new_row)
 
         return board
-
+    
     def to_string(self):
         output = ""
         counter = 1
@@ -113,6 +114,7 @@ class Board:
 
 
 class Numbrix(Problem):
+    
     def __init__(self, board: Board):
         """ O construtor especifica o estado inicial. """
         self.initial = NumbrixState(board)
@@ -149,9 +151,8 @@ class Numbrix(Problem):
                                 if x-1 in adj_list or x-1 not in state.board.used_numbers:
                                     if (i,j,x) not in actions_list:
                                         actions_list.append((i,j,x))
-
                     return actions_list
-
+    
     def result(self, state: NumbrixState, action):
         """ Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
@@ -174,7 +175,7 @@ class Numbrix(Problem):
         new_board.used_numbers.append(action[2])
 
         return NumbrixState(new_board)
-
+    
     def goal_test(self, state: NumbrixState):
         """ Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro 
@@ -229,13 +230,16 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
-    
-    filepath = sys.argv[1]
-    # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
-    board = Board.parse_instance(filepath)
-    # Criar uma instância de Numbrix:
-    problem = Numbrix(board)
-    # Obter o nó solução usando a procura:
-    goal_node = breadth_first_tree_search(problem)
+    with cProfile.Profile() as profile:
+        filepath = sys.argv[1]
+        # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
+        board = Board.parse_instance(filepath)
+        # Criar uma instância de Numbrix:
+        problem = Numbrix(board)
+        # Obter o nó solução usando a procura:
+        goal_node = breadth_first_tree_search(problem)
+        stats = pstats.Stats(profile)
+        stats.sort_stats(pstats.SortKey.TIME)
+        stats.print_stats()
     # Verificar se foi atingida a solução
     print("Solution:\n", goal_node.state.board.to_string(), sep="")
