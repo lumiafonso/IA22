@@ -125,13 +125,13 @@ class Numbrix(Problem):
     def actions(self, state: NumbrixState):
         """ Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento. """
-        print("Board enters actions\n"+state.board.to_string())
-        print("missing numbers:\n",state.board.missing_numbers)
+        """ print("Board enters actions\n"+state.board.to_string())
+        print("missing numbers:\n",state.board.missing_numbers) """
         actions_list = []
         #for each missing number, get +1 and -1 on the board 
         for missing_num in state.board.missing_numbers:
             """ time.sleep(1) """
-            print("\n\n\nmissing_num gerau:\n\n\n",missing_num)
+            """ print("\n\n\nmissing_num gerau:\n\n\n",missing_num) """
             intersection = False
             if missing_num - 1 not in state.board.missing_numbers and missing_num -1 != 0 and missing_num + 1 not in state.board.missing_numbers and missing_num + 1 <= state.board.size**2:
                 intersection = True
@@ -155,12 +155,13 @@ class Numbrix(Problem):
                         temp_actions+=self.get_action(state, missing_num, pos, 3, -1)
 
                 if intersection:
-                    print("\n\nSo ha -1 no board intersetcion\n\n",temp_actions)
+                    """ print("\n\nSo ha -1 no board intersetcion\n\n",temp_actions) """
                     actions_list.append(temp_actions)
                     temp_actions = []
                 else:
-                    print("\n\nSo ha -1 no board\n\n",temp_actions)
-                    return temp_actions
+                    """ print("\n\nSo ha -1 no board\n\n",temp_actions) """
+                    if temp_actions != []:
+                        return temp_actions
             #if missing_num is the last one, doesnt do nothing
             if missing_num + 1 not in state.board.missing_numbers and missing_num + 1 <= state.board.size**2:
                 #TODO meter isto numa funcao - FIX
@@ -172,29 +173,46 @@ class Numbrix(Problem):
                     adj_list = hor + vert
                     #adicionar o numero as posicoes adjacentes
                     if adj_list[0] == 0:
-                        temp_actions+=self.get_action(state, missing_num, pos, 0, 1)
+                        #if missing num is 1, there isnt a lower number to compare distances with
+                        if missing_num != 1:
+                            temp_actions+=self.get_action(state, missing_num, pos, 0, 1)
+                        else:
+                            temp_actions+=[(pos[0],pos[1]-1,1)]
                     if adj_list[1] == 0:
-                        temp_actions+=self.get_action(state, missing_num, pos, 1, 1)
+                        if missing_num != 1:
+                            temp_actions+=self.get_action(state, missing_num, pos, 1, 1)
+                        else:
+                            temp_actions+=[(pos[0],pos[1]+1,1)]
                     if adj_list[2] == 0:
-                        temp_actions+=self.get_action(state, missing_num, pos, 2, 1)
+                        if missing_num != 1:
+                            temp_actions+=self.get_action(state, missing_num, pos, 2, 1)
+                        else:
+                            temp_actions+=[(pos[0]+1,pos[1],1)]
                     if adj_list[3] == 0:
-                        temp_actions+=self.get_action(state, missing_num, pos, 3, 1)
+                        if missing_num != 1:
+                            temp_actions+=self.get_action(state, missing_num, pos, 3, 1)
+                        else:
+                            temp_actions+=[(pos[0]-1,pos[1],1)]
                     
                 if intersection:
-                    print("\n\nSo ha +1 no board intersection\n\n",temp_actions)
+                    """ print("\n\nSo ha +1 no board intersection\n\n",temp_actions) """
                     actions_list.append(temp_actions)
                     temp_actions = []
                 else:
-                    print("\n\nSo ha +1 no board\n\n",temp_actions)
-                    return temp_actions
+                    """ print("\n\nSo ha +1 no board\n\n",temp_actions) """
+                    if temp_actions != []:
+                        return temp_actions
             #if the neighbours are both on the board, return the intersection of their possible actions    
-            print("actions_list total:",actions_list)
+            """ print("actions_list total:",actions_list) """
             if intersection:
                 for action in actions_list[0]:
                     if action not in actions_list[1]:
                         actions_list[0].remove(action)
-                print("\n\nHa -1 e +1 no board\n\n",actions_list[0])
-                return actions_list[0]
+                """ print("\n\nHa -1 e +1 no board\n\n",actions_list[0]) """
+                if actions_list[0] != []:
+                    return actions_list[0]
+        #if after going through all missing numbers nothing is returned, it returns an empty list []
+        return []
 
 
     def result(self, state: NumbrixState, action):
@@ -267,9 +285,9 @@ class Numbrix(Problem):
     #checks if action is compatible with manhattan distance and returns it
     def get_action(self, state, missing_num, pos, adj_pos, case):
         action = []
-        print("board que entra no get:\n"+state.board.to_string())
+        """ print("board que entra no get:\n"+state.board.to_string())
         print("posicao do missing_num",pos)
-        print("adj_pos:",adj_pos)
+        print("adj_pos:",adj_pos) """
         used_num = 0
         if case == -1:
             #when missing_num-1 is on the board, if a adjacent number is zero, check the distance between that position and the next greater number on the board if compatible return action
@@ -285,11 +303,9 @@ class Numbrix(Problem):
                 else:
                     used_num = int(used_num_str)
 
-        print("used_num in dict",used_num_str)
-        print("missing_num",missing_num)
+        """ print("used_num",used_num)
+        print("missing_num",missing_num) """
         if(adj_pos == 0):
-            """ print("posicao p manhattan:",pos[0],pos[1]-1)
-            print("diff numeros:",abs(used_num-missing_num),"manhattan distance:",self.manhattan_distance(state.board.board_positions[used_num_str],(pos[0],pos[1]-1))) """
             if(abs(used_num-missing_num) >= self.manhattan_distance(state.board.board_positions[used_num_str],(pos[0],pos[1]-1))):
                 action.append((pos[0],pos[1]-1,missing_num))
         elif(adj_pos == 1):
@@ -299,10 +315,9 @@ class Numbrix(Problem):
             if(abs(used_num-missing_num) >= self.manhattan_distance(state.board.board_positions[used_num_str],(pos[0]+1,pos[1]))):
                 action.append((pos[0]+1,pos[1],missing_num))
         elif(adj_pos == 3):
-            """ print("posicao p manhattan:",pos[0],pos[1]-1)
-            print("diff numeros:",abs(used_num-missing_num),"manhattan distance:",self.manhattan_distance(state.board.board_positions[used_num_str],(pos[0]-1,pos[1]))) """
             if(abs(used_num-missing_num) >= self.manhattan_distance(state.board.board_positions[used_num_str],(pos[0]-1,pos[1]))):
                 action.append((pos[0]-1,pos[1],missing_num))
+        """ print("acao final",action) """
         return action
     
     def manhattan_distance(self, pos1, pos2):
