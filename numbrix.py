@@ -461,7 +461,7 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
-    start = time.time()
+    """ start = time.time() """
     filepath = sys.argv[1]
     # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
     board = Board.parse_instance(filepath)
@@ -469,7 +469,7 @@ if __name__ == "__main__":
     problem = Numbrix(board)
     # Obter o nó solução usando a procura:
     goal_node = depth_first_tree_search(problem)
-    end = time.time()
-    print(end-start)
+    """ end = time.time()
+    print(end-start) """
     # Verificar se foi atingida a solução
-    print("Solution:\n", goal_node.state.board.to_string(), sep="")
+    print(goal_node.state.board.to_string())
