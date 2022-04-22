@@ -358,15 +358,19 @@ class Board:
     
     def to_string(self):
         output = ""
-        counter = 1
+        counterx = 1
+        countery = 1
         for l in self.matrix:
             for i in l:
-                if counter == self.size:
+                if counterx == self.size and countery != self.size:
                     output += str(i) + "\n"
+                elif counterx == self.size and countery == self.size:
+                    output += str(i)
                 else:
                     output += str(i) + "\t"
-                counter +=1
-            counter = 1
+                counterx +=1
+            countery += 1
+            counterx = 1
         return output
         
 
@@ -472,4 +476,4 @@ if __name__ == "__main__":
     """ end = time.time()
     print(end-start) """
     # Verificar se foi atingida a solução
-    print(goal_node.state.board.to_string())
+    print(goal_node.state.board.to_string(),sep="")
