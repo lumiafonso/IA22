@@ -270,51 +270,60 @@ class Board:
     def get_action_distance_ok(self, missing_num, pos, adj_pos, case):
         action = []
         used_num = 0
+        temp = 0
         if case == -1:
             #when missing_num-1 is on the board, if a adjacent number is zero, check the distance between that position and the next greater number on the board if compatible return action
-            for used_num_str in sorted(self.board_positions.keys()):
+            for used_num_str in self.board_positions.keys():
                 if int(used_num_str) > missing_num:
-                    used_num = int(used_num_str)
-                    break
+                    if temp == 0:
+                        temp = int(used_num_str)
+                    elif int(used_num_str) < temp:
+                        temp = int(used_num_str)
+            used_num = temp
+                    
         elif case == 1:
             #when missing_num+1 is on the board, if a adjacent number is zero, check the distance between that position and the next smaller number on the board if compatible return action
-            for used_num_str in sorted(self.board_positions.keys()):
-                if int(used_num_str) > missing_num:
-                    break
-                else:
-                    used_num = int(used_num_str)
+            for used_num_str in self.board_positions.keys():
+                if int(used_num_str) < missing_num:
+                    if temp == 0:
+                        temp = int(used_num_str)
+                    elif int(used_num_str) > temp:
+                        temp = int(used_num_str)
+            used_num = temp
         
         """ print("missing_num:",missing_num)
         print("caso:",case)
-        print("numero mais proximo:",used_num) """
+        print("numero mais proximo:",used_num)
+        print("pos_adj:",adj_pos) """
 
         #if used_num == 0, there is no next greater/smaller number, so justs add action
         
         if(adj_pos == 0):
             if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[used_num_str],(pos[0],pos[1]-1))):
+                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0],pos[1]-1))):
                     action.append((pos[0],pos[1]-1,missing_num))
             else:
                 action.append((pos[0],pos[1]-1,missing_num))
         elif(adj_pos == 1):
             if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[used_num_str],(pos[0],pos[1]+1))):
+                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0],pos[1]+1))):
                     action.append((pos[0],pos[1]+1,missing_num))
             else:
                 action.append((pos[0],pos[1]+1,missing_num))
         elif(adj_pos == 2):
             if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[used_num_str],(pos[0]+1,pos[1]))):
+                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0]+1,pos[1]))):
                     action.append((pos[0]+1,pos[1],missing_num))
             else:
                 action.append((pos[0]+1,pos[1],missing_num))
         elif(adj_pos == 3):
             if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[used_num_str],(pos[0]-1,pos[1]))):
+                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0]-1,pos[1]))):
                     action.append((pos[0]-1,pos[1],missing_num))
             else:
                 action.append((pos[0]-1,pos[1],missing_num))
 
+        """ print("action devolvida distance:",action) """
         return action
     
     def manhattan_distance(self, pos1, pos2):
@@ -380,7 +389,21 @@ class Numbrix(Problem):
         das presentes na lista obtida pela execução de 
         self.actions(state). """
         #create board copy
-        new_board = deepcopy(state.board)
+        new_board = Board()
+        new_matrix = []
+        for row in state.board.matrix:
+            new_matrix.append(row.copy())
+        new_board.matrix = new_matrix
+        new_board.size = state.board.size
+        missing_numbers = set()
+        for missing_num in state.board.missing_numbers:
+            missing_numbers.add(missing_num)
+        new_board.missing_numbers = missing_numbers
+        new_board_positions = {}
+        for k,v in state.board.board_positions.items():
+            new_board_positions[k] = v
+        new_board.board_positions = new_board_positions
+
         #if number is being replaced, add number to missing numbers
         old_num = new_board.get_number(action[0],action[1])
         if old_num != 0:
@@ -438,7 +461,7 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
-    """ start = time.time() """
+    start = time.time()
     filepath = sys.argv[1]
     # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
     board = Board.parse_instance(filepath)
@@ -446,7 +469,7 @@ if __name__ == "__main__":
     problem = Numbrix(board)
     # Obter o nó solução usando a procura:
     goal_node = depth_first_tree_search(problem)
-    """ end = time.time()
-    print(end-start) """
+    end = time.time()
+    print(end-start)
     # Verificar se foi atingida a solução
     print("Solution:\n", goal_node.state.board.to_string(), sep="")
