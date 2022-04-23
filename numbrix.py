@@ -117,6 +117,7 @@ class Board:
             """ time.sleep(1) """
             """ print("missing num:",missing_num) """
             intersection = False
+            only_pos = False
             if missing_num - 1 not in self.missing_numbers and missing_num -1 != 0 and missing_num + 1 not in self.missing_numbers and missing_num + 1 <= self.size**2:
                 intersection = True
             if missing_num - 1 not in self.missing_numbers and missing_num -1 != 0:
@@ -195,7 +196,11 @@ class Board:
                                     temp_actions+=action
                         else:
                             action = [(pos[0],pos[1]-1,1)]
-                            if self.is_valid_action(action[0]):
+                            if self.is_only_position(action[0]):
+                                only_pos = True
+                                if self.is_valid_action(action[0]):
+                                    temp_actions=action
+                            elif self.is_valid_action(action[0]) and only_pos == False:
                                 temp_actions+=action
                     if adj_list[1] == 0:
                         if missing_num != 1:
@@ -205,7 +210,11 @@ class Board:
                                     temp_actions+=action
                         else:
                             action = [(pos[0],pos[1]+1,1)]
-                            if self.is_valid_action(action[0]):
+                            if self.is_only_position(action[0]):
+                                only_pos = True
+                                if self.is_valid_action(action[0]):
+                                    temp_actions=action
+                            elif self.is_valid_action(action[0]) and only_pos == False:
                                 temp_actions+=action
                     if adj_list[2] == 0:
                         if missing_num != 1:
@@ -215,7 +224,11 @@ class Board:
                                     temp_actions+=action
                         else:
                             action = [(pos[0]+1,pos[1],1)]
-                            if self.is_valid_action(action[0]):
+                            if self.is_only_position(action[0]):
+                                only_pos = True
+                                if self.is_valid_action(action[0]):
+                                    temp_actions=action
+                            elif self.is_valid_action(action[0]) and only_pos == False:
                                 temp_actions+=action
                     if adj_list[3] == 0:
                         if missing_num != 1:
@@ -225,9 +238,13 @@ class Board:
                                     temp_actions+=action
                         else:
                             action = [(pos[0]-1,pos[1],1)]
-                            if self.is_valid_action(action[0]):
+                            if self.is_only_position(action[0]):
+                                only_pos = True
+                                if self.is_valid_action(action[0]):
+                                    temp_actions=action
+                            elif self.is_valid_action(action[0]) and only_pos == False:
                                 temp_actions+=action
-                    
+                            
                 if intersection:
                     actions_list.append(temp_actions)
                     temp_actions = []
@@ -242,10 +259,10 @@ class Board:
                 if actions_list[0] != []:
                     all_missing_num_actions_list.append(actions_list[0])
 
-        """ print(self.to_string()) """
+        print(self.to_string())
         #if no actions available return []
         if all_missing_num_actions_list == []:
-            """ print(all_missing_num_actions_list) """
+            print(all_missing_num_actions_list)
             """ input() """
             return []
         #return the action list with smaller length
@@ -262,7 +279,7 @@ class Board:
                 elif len(all_missing_num_actions_list[i]) < min_len:
                     min_len = len(all_missing_num_actions_list[i])
                     min_len_index = i
-            """ print(all_missing_num_actions_list[min_len_index]) """
+            print(all_missing_num_actions_list)
             """ input() """
             return all_missing_num_actions_list[min_len_index]
     
@@ -297,7 +314,6 @@ class Board:
         print("pos_adj:",adj_pos) """
 
         #if used_num == 0, there is no next greater/smaller number, so justs add action
-        
         if(adj_pos == 0):
             if used_num != 0:
                 if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0],pos[1]-1))):
@@ -330,7 +346,6 @@ class Board:
         return sum(abs(a-b) for a, b in zip(pos1,pos2))
     
     def is_valid_action(self, action):
-        """ return True """
         row = action[0]
         col = action[1]
         num = action[2]
@@ -341,10 +356,16 @@ class Board:
 
         zeros_in_adj = adj_list.count(0)
         valid_in_adj = 0
+        nones_in_adj = 0
+        nums_in_adj = []
         for adj in adj_list:
-            if adj != None and adj != 0 and abs(adj-num) == 1:
-                valid_in_adj+=1
-        
+            if adj != None and adj != 0:
+                if abs(adj-num) == 1:
+                    valid_in_adj+=1
+                nums_in_adj.append(adj)
+            if adj == None:
+                nones_in_adj+=1
+
         if num == 1 or num == self.size**2:
             if valid_in_adj == 1 or zeros_in_adj == 1:
                 return True
@@ -354,8 +375,30 @@ class Board:
             return True
 
         return False
-
     
+    def is_only_position(self,action):
+        row = action[0]
+        col = action[1]
+        num = action[2]
+
+        hor = self.adjacent_horizontal_numbers(row,col)
+        vert = self.adjacent_vertical_numbers(row,col)
+        adj_list = hor + vert
+
+        valid_in_adj = 0
+        nums_or_nones_in_adj = 0
+        for adj in adj_list:
+            if adj != 0:
+                if adj != None:
+                    if abs(adj-num) == 1:
+                        valid_in_adj+=1
+                nums_or_nones_in_adj+=1
+
+        if nums_or_nones_in_adj == 4 and valid_in_adj == 1:
+            return True
+        else:
+            return False
+
     def to_string(self):
         output = ""
         counterx = 1
@@ -473,7 +516,7 @@ if __name__ == "__main__":
     problem = Numbrix(board)
     # Obter o nó solução usando a procura:
     goal_node = depth_first_tree_search(problem)
-    """ end = time.time()
+    """ end = time.time()int(used_num)
     print(end-start) """
     # Verificar se foi atingida a solução
     print(goal_node.state.board.to_string(),sep="")
