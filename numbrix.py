@@ -32,7 +32,7 @@ class Board:
         self.matrix = []
         self.size = 0
         self.missing_numbers = set()
-        self.board_positions = {}
+        self.board_positions = []
     
     def get_number(self, row: int, col: int) -> int:
         """ Devolve o valor na respetiva posição do tabuleiro. """
@@ -74,6 +74,45 @@ class Board:
             hor.append(self.matrix[row][col+1])
         
         return hor
+
+    def get_pos(self, num: int):
+        return self.board_positions[num-1]
+
+    def all_adjacent_numbers(self, row: int, col:int):
+        hor = self.adjacent_horizontal_numbers(row,col)
+        vert = self.adjacent_vertical_numbers(row,col)
+        return hor+vert
+
+    def adjacent_zero_positions(self, num: int):
+        positions = []
+        num_pos = self.get_pos(num)
+        row, col = num_pos
+        adj_list = self.all_adjacent_numbers(row,col)
+        if adj_list[0] == 0:
+            positions.append((row,col-1))
+        if adj_list[1] == 0:
+            positions.append((row,col+1))
+        if adj_list[2] == 0:
+            positions.append((row+1,col))
+        if adj_list[3] == 0:
+            positions.append((row-1,col)) 
+        return positions
+
+    def get_neighbours_in_board(self, num: int):
+        neighbours = []
+        if num - 1 not in self.missing_numbers and num - 1 != 0:
+            neighbours.append(num-1)
+        if num + 1 not in self.missing_numbers and num + 1 != self.size**2:
+            neighbours.append(num+1)
+        return neighbours
+
+    def get_neighbours_not_in_board(self, num: int):
+        neighbours = []
+        if num - 1 in self.missing_numbers and num - 1 != 0:
+            neighbours.append(num-1)
+        if num + 1 in self.missing_numbers and num + 1 != self.size**2:
+            neighbours.append(num+1)
+        return neighbours
     
     @staticmethod    
     def parse_instance(filename: str):
@@ -88,6 +127,7 @@ class Board:
 
         for i in range (1, board.size**2+1):
             board.missing_numbers.add(i)
+            board.board_positions.append(None)
         #remove used numbers from missing numbers and save used numbers positions to a dictionary; example -> 6:(x,y)
         row = []
         for i in range(1, board.size + 1):
@@ -97,308 +137,93 @@ class Board:
                 new_row.append(int(row[j]))
                 if int(row[j]) > 0:
                     board.missing_numbers.remove(int(row[j]))
-                    board.board_positions[row[j]] = (i-1,j)
+                    board.board_positions[int(row[j])-1] = (i-1,j)
             board.matrix.append(new_row)
 
         return board
 
     def get_actions(self):
-        all_missing_num_actions_list = []
-
-        actions_list = []
-        """ print("missing_numbers:\n",self.missing_numbers) """
-        #for each missing number, get +1 and -1 on the board, if they exist.
-        #fill their adjacent positions with the missing number if:
-        # - the manhattan distance between the position and the next greater/smaller number is smaller than the diff between numbers
-        # - if the action is valid based on the numbrix restrictions (is_valid_action)
-        #Add the valid actions of each missing number to the action_list
-        #When an action is not valid, the whole board is useless
+        min_len_action_set = []
+        min_len = -1
         for missing_num in self.missing_numbers:
-            """ time.sleep(1) """
-            """ print("missing num:",missing_num) """
-            intersection = False
-            only_pos = False
-            if missing_num - 1 not in self.missing_numbers and missing_num -1 != 0 and missing_num + 1 not in self.missing_numbers and missing_num + 1 <= self.size**2:
-                intersection = True
-            if missing_num - 1 not in self.missing_numbers and missing_num -1 != 0:
-                #TODO meter isto numa funcao - FIX
-                #dictionary board_positions keys in string
-                temp_actions = []
-                if str(missing_num-1) in self.board_positions.keys():
-                    pos = self.board_positions[str(missing_num-1)]
-                    hor = self.adjacent_horizontal_numbers(pos[0],pos[1])
-                    vert = self.adjacent_vertical_numbers(pos[0],pos[1])
-                    adj_list = hor + vert
-                    #adicionar o numero as posicoes adjacentes se for valido
-                    if adj_list[0] == 0:
-                        if missing_num != self.size**2:
-                            action = self.get_action_distance_ok(missing_num, pos, 0, -1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0],pos[1]-1,self.size**2)]
-                            if self.is_valid_action(action[0]):
-                                temp_actions+=action
-                    if adj_list[1] == 0:
-                        if missing_num != self.size**2:
-                            action = self.get_action_distance_ok(missing_num, pos, 1, -1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0],pos[1]+1,self.size**2)]
-                            if self.is_valid_action(action[0]):
-                                temp_actions+=action
-                    if adj_list[2] == 0:
-                        if missing_num != self.size**2:
-                            action = self.get_action_distance_ok(missing_num, pos, 2, -1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0]+1,pos[1],self.size**2)]
-                            if self.is_valid_action(action[0]):
-                                temp_actions+=action
-                    if adj_list[3] == 0:
-                        if missing_num != self.size**2:
-                            action = self.get_action_distance_ok(missing_num, pos, 3, -1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0]-1,pos[1],self.size**2)]
-                            if self.is_valid_action(action[0]):
-                                temp_actions+=action
+            local_actions = []
+            neighbours = self.get_neighbours_in_board(missing_num)
+            
+            if len(neighbours) == 0:
+                continue
+            elif len(neighbours) == 2:
+                pass
+            else:
+                #vai à posicao de cada um neighbour
+                for pos in self.adjacent_zero_positions(neighbours[0]):
+                    r,c = pos
+                    if self.is_valid_action(r,c,missing_num):
+                        local_actions.append((r,c,missing_num))
+                    else:
+                        continue
+            
+            if len(local_actions) == 1:
+                return local_actions
 
-                if intersection:
-                    actions_list.append(temp_actions)
-                    temp_actions = []
-                else:
-                    if temp_actions != []:
-                        all_missing_num_actions_list.append(temp_actions)
-            #if missing_num is the last one, doesnt do nothing
-            if missing_num + 1 not in self.missing_numbers and missing_num + 1 <= self.size**2:
-                #TODO meter isto numa funcao - FIX
-                temp_actions = []
-                if str(missing_num + 1) in self.board_positions.keys():
-                    pos = self.board_positions[str(missing_num+1)]
-                    hor = self.adjacent_horizontal_numbers(pos[0],pos[1])
-                    vert = self.adjacent_vertical_numbers(pos[0],pos[1])
-                    adj_list = hor + vert
-                    #adicionar o numero as posicoes adjacentes
-                    if adj_list[0] == 0:
-                        #if missing num is 1, there isnt a lower number to compare distances with
-                        if missing_num != 1:
-                            action = self.get_action_distance_ok(missing_num, pos, 0, 1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0],pos[1]-1,1)]
-                            if self.is_only_position(action[0]):
-                                only_pos = True
-                                if self.is_valid_action(action[0]):
-                                    temp_actions=action
-                            elif self.is_valid_action(action[0]) and only_pos == False:
-                                temp_actions+=action
-                    if adj_list[1] == 0:
-                        if missing_num != 1:
-                            action = self.get_action_distance_ok(missing_num, pos, 1, 1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0],pos[1]+1,1)]
-                            if self.is_only_position(action[0]):
-                                only_pos = True
-                                if self.is_valid_action(action[0]):
-                                    temp_actions=action
-                            elif self.is_valid_action(action[0]) and only_pos == False:
-                                temp_actions+=action
-                    if adj_list[2] == 0:
-                        if missing_num != 1:
-                            action = self.get_action_distance_ok(missing_num, pos, 2, 1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0]+1,pos[1],1)]
-                            if self.is_only_position(action[0]):
-                                only_pos = True
-                                if self.is_valid_action(action[0]):
-                                    temp_actions=action
-                            elif self.is_valid_action(action[0]) and only_pos == False:
-                                temp_actions+=action
-                    if adj_list[3] == 0:
-                        if missing_num != 1:
-                            action = self.get_action_distance_ok(missing_num, pos, 3, 1)
-                            if action != []:
-                                if self.is_valid_action(action[0]):
-                                    temp_actions+=action
-                        else:
-                            action = [(pos[0]-1,pos[1],1)]
-                            if self.is_only_position(action[0]):
-                                only_pos = True
-                                if self.is_valid_action(action[0]):
-                                    temp_actions=action
-                            elif self.is_valid_action(action[0]) and only_pos == False:
-                                temp_actions+=action
-                            
-                if intersection:
-                    actions_list.append(temp_actions)
-                    temp_actions = []
-                else:
-                    if temp_actions != []:
-                        all_missing_num_actions_list.append(temp_actions)
-            #if the neighbours are both on the board, return the intersection of their possible actions    
-            if intersection:
-                for action in actions_list[0]:
-                    if action not in actions_list[1]:
-                        actions_list[0].remove(action)
-                if actions_list[0] != []:
-                    all_missing_num_actions_list.append(actions_list[0])
+            if local_actions != []:
+                if min_len == -1:
+                    min_len_action_set = local_actions
+                    min_len = len(local_actions)
+                elif len(local_actions) < min_len:
+                    min_len_action_set = local_actions
 
-        print(self.to_string())
-        #if no actions available return []
-        if all_missing_num_actions_list == []:
-            print(all_missing_num_actions_list)
-            """ input() """
-            return []
-        #return the action list with smaller length
-        else:
-            min_len = -1
-            min_len_index = -1
-            for i in range(len(all_missing_num_actions_list)):
-                #if theres a action list with lenght 1, returns it
-                if all_missing_num_actions_list[i] == 1:
-                    return all_missing_num_actions_list[i]
-                elif min_len == -1:
-                    min_len = len(all_missing_num_actions_list[i])
-                    min_len_index = i
-                elif len(all_missing_num_actions_list[i]) < min_len:
-                    min_len = len(all_missing_num_actions_list[i])
-                    min_len_index = i
-            print(all_missing_num_actions_list)
-            """ input() """
-            return all_missing_num_actions_list[min_len_index]
-    
-    #checks if action is compatible with manhattan distance and returns it
-    def get_action_distance_ok(self, missing_num, pos, adj_pos, case):
-        action = []
-        used_num = 0
-        temp = 0
-        if case == -1:
-            #when missing_num-1 is on the board, if a adjacent number is zero, check the distance between that position and the next greater number on the board if compatible return action
-            for used_num_str in self.board_positions.keys():
-                if int(used_num_str) > missing_num:
-                    if temp == 0:
-                        temp = int(used_num_str)
-                    elif int(used_num_str) < temp:
-                        temp = int(used_num_str)
-            used_num = temp
-                    
-        elif case == 1:
-            #when missing_num+1 is on the board, if a adjacent number is zero, check the distance between that position and the next smaller number on the board if compatible return action
-            for used_num_str in self.board_positions.keys():
-                if int(used_num_str) < missing_num:
-                    if temp == 0:
-                        temp = int(used_num_str)
-                    elif int(used_num_str) > temp:
-                        temp = int(used_num_str)
-            used_num = temp
+        return min_len_action_set
+
+    def is_valid_action(self, r, c, num):
+        return self.is_distance_ok(r, c, num) and not self.interferes_with_board(r, c, num)
+
+    def interferes_with_board(self, r, c, num):
+        for adj_r,adj_c in self.adjacent_zero_positions(num):
+            if self.inteferes_with_adjacent(num,adj_r,adj_c):
+                return False
+        return True
+
+    def interferes_with_adjacent(self, num, r, c):
+        value = self.matrix[row][col]
+        #se true, ta mal
+        #se valor que ele quer por é neighbour do adjacente, não pode pôr se o numero de adjacentes livres  do adjacente for menor que o numero de neighbours que ainda faltam colocar
+        if num in (value-1,value+1):
+            return len(self.adjacent_zero_positions(value)) < len(self.get_neighbours_not_in_board(value))
+            
+        return len(self.adjacent_zero_positions(value)) - 1 < len(self.get_neighbours_not_in_board(value))
+
+    def is_distance_ok(self, r, c, num):
+        for pos in self.get_previous_next_number_pos_board(num):
+            if pos != ():
+                pnr,pnc = pos
+                if (self.manhattan_distance(pos, (r,c)) > abs(num-self.get_number(pnr, pnc))):
+                    return False
+        return True
+
+    def get_previous_next_number_pos_board(self, num):
+        prev = ()
+        nxt = ()
+
+        index = num - 1 
+        while(index > 0):
+            if self.board_positions[index-1] != None:
+                prev = self.board_positions[index-1]
+                break
+            index-=1
         
-        """ print("missing_num:",missing_num)
-        print("caso:",case)
-        print("numero mais proximo:",used_num)
-        print("pos_adj:",adj_pos) """
+        index = num + 1
+        while(index <= self.size):
+            if self.board_positions[index-1] != None:
+                prev = self.board_positions[index-1]
+                break
+            index+=1
+        
+        return (prev,nxt)
 
-        #if used_num == 0, there is no next greater/smaller number, so justs add action
-        if(adj_pos == 0):
-            if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0],pos[1]-1))):
-                    action.append((pos[0],pos[1]-1,missing_num))
-            else:
-                action.append((pos[0],pos[1]-1,missing_num))
-        elif(adj_pos == 1):
-            if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0],pos[1]+1))):
-                    action.append((pos[0],pos[1]+1,missing_num))
-            else:
-                action.append((pos[0],pos[1]+1,missing_num))
-        elif(adj_pos == 2):
-            if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0]+1,pos[1]))):
-                    action.append((pos[0]+1,pos[1],missing_num))
-            else:
-                action.append((pos[0]+1,pos[1],missing_num))
-        elif(adj_pos == 3):
-            if used_num != 0:
-                if(abs(used_num-missing_num) >= self.manhattan_distance(self.board_positions[str(used_num)],(pos[0]-1,pos[1]))):
-                    action.append((pos[0]-1,pos[1],missing_num))
-            else:
-                action.append((pos[0]-1,pos[1],missing_num))
-
-        """ print("action devolvida distance:",action) """
-        return action
     
     def manhattan_distance(self, pos1, pos2):
         return sum(abs(a-b) for a, b in zip(pos1,pos2))
     
-    def is_valid_action(self, action):
-        row = action[0]
-        col = action[1]
-        num = action[2]
-
-        hor = self.adjacent_horizontal_numbers(row,col)
-        vert = self.adjacent_vertical_numbers(row,col)
-        adj_list = hor + vert
-
-        zeros_in_adj = adj_list.count(0)
-        valid_in_adj = 0
-        nones_in_adj = 0
-        nums_in_adj = []
-        for adj in adj_list:
-            if adj != None and adj != 0:
-                if abs(adj-num) == 1:
-                    valid_in_adj+=1
-                nums_in_adj.append(adj)
-            if adj == None:
-                nones_in_adj+=1
-
-        if num == 1 or num == self.size**2:
-            if valid_in_adj == 1 or zeros_in_adj == 1:
-                return True
-        elif valid_in_adj == 2 or zeros_in_adj > 1:
-            return True
-        elif valid_in_adj == 1 and zeros_in_adj > 0:
-            return True
-
-        return False
-    
-    def is_only_position(self,action):
-        row = action[0]
-        col = action[1]
-        num = action[2]
-
-        hor = self.adjacent_horizontal_numbers(row,col)
-        vert = self.adjacent_vertical_numbers(row,col)
-        adj_list = hor + vert
-
-        valid_in_adj = 0
-        nums_or_nones_in_adj = 0
-        for adj in adj_list:
-            if adj != 0:
-                if adj != None:
-                    if abs(adj-num) == 1:
-                        valid_in_adj+=1
-                nums_or_nones_in_adj+=1
-
-        if nums_or_nones_in_adj == 4 and valid_in_adj == 1:
-            return True
-        else:
-            return False
-
     def to_string(self):
         output = ""
         counterx = 1
@@ -446,9 +271,9 @@ class Numbrix(Problem):
         for missing_num in state.board.missing_numbers:
             missing_numbers.add(missing_num)
         new_board.missing_numbers = missing_numbers
-        new_board_positions = {}
-        for k,v in state.board.board_positions.items():
-            new_board_positions[k] = v
+        new_board_positions = []
+        for i in range(state.board.board_positions):
+            new_board_positions[i].append(state.board.board_positions[i].copy())
         new_board.board_positions = new_board_positions
 
         #if number is being replaced, add number to missing numbers
@@ -460,7 +285,7 @@ class Numbrix(Problem):
         #remove new number from missing numbers
         new_board.missing_numbers.remove(action[2])
         #update number position
-        new_board.board_positions[str(action[2])] = (action[0],action[1])
+        new_board.board_positions[action[2]-1] = (action[0],action[1])
 
         return NumbrixState(new_board)
     
@@ -495,11 +320,19 @@ class Numbrix(Problem):
                         pos = new_pos
                     return True
         return False
-                        
+
     def h(self, node: Node):
         """ Função heuristica utilizada para a procura A*. """
-        # TODO
-        pass
+        if node.action == None:
+            return 10
+        heur = 0
+        x,y,n = node.action
+        lists = board.adjacent_horizontal_numbers(x,y) + board.adjacent_vertical_numbers(x,y)
+        for num in lists:
+            if num == 0:
+                heur += 1
+        
+        return heur
     
 
 if __name__ == "__main__":
@@ -508,7 +341,6 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
-    """ start = time.time() """
     filepath = sys.argv[1]
     # Ler tabuleiro do ficheiro 'i1.txt' (Figura 1):
     board = Board.parse_instance(filepath)
@@ -516,7 +348,5 @@ if __name__ == "__main__":
     problem = Numbrix(board)
     # Obter o nó solução usando a procura:
     goal_node = depth_first_tree_search(problem)
-    """ end = time.time()int(used_num)
-    print(end-start) """
     # Verificar se foi atingida a solução
     print(goal_node.state.board.to_string(),sep="")
