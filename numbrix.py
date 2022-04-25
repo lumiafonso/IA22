@@ -8,8 +8,6 @@
 
 import sys
 from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search
-from copy import deepcopy
-import time
 from math import sqrt
 import collections
 
@@ -85,8 +83,7 @@ class Board:
 
     def adjacent_zero_positions(self, num: int):
         positions = []
-        num_pos = self.get_pos(num)
-        row, col = num_pos
+        row, col = self.get_pos(num)
         adj_list = self.all_adjacent_numbers(row,col)
         if adj_list[0] == 0:
             positions.append((row,col-1))
@@ -97,12 +94,26 @@ class Board:
         if adj_list[3] == 0:
             positions.append((row-1,col)) 
         return positions
+    
+    def adjacent_number_positions(self, pos):
+        positions = []
+        row, col = pos
+        adj_list = self.all_adjacent_numbers(row,col)
+        if adj_list[0] not in (0,None):
+            positions.append((row,col-1))
+        if adj_list[1] not in (0,None):
+            positions.append((row,col+1))
+        if adj_list[2] not in (0,None):
+            positions.append((row+1,col))
+        if adj_list[3] not in (0,None):
+            positions.append((row-1,col)) 
+        return positions
 
     def get_neighbours_in_board(self, num: int):
         neighbours = []
         if num - 1 not in self.missing_numbers and num - 1 != 0:
             neighbours.append(num-1)
-        if num + 1 not in self.missing_numbers and num + 1 != self.size**2:
+        if num + 1 not in self.missing_numbers and num + 1 <= self.size**2:
             neighbours.append(num+1)
         return neighbours
 
@@ -149,48 +160,71 @@ class Board:
             local_actions = []
             neighbours = self.get_neighbours_in_board(missing_num)
             
+            """ print("board:\n"+self.to_string())
+            print("missingnum:",missing_num) 
+            print("neighbours",neighbours) """
+
             if len(neighbours) == 0:
                 continue
             elif len(neighbours) == 2:
-                pass
+                actions1 = self.get_local_actions(missing_num, neighbours[0])
+                actions2= self.get_local_actions(missing_num, neighbours[1])
+                local_actions = self.intersection(actions1,actions2)
             else:
-                #vai à posicao de cada um neighbour
-                for pos in self.adjacent_zero_positions(neighbours[0]):
-                    r,c = pos
-                    if self.is_valid_action(r,c,missing_num):
-                        local_actions.append((r,c,missing_num))
-                    else:
-                        continue
+                local_actions = self.get_local_actions(missing_num, neighbours[0])
             
             if len(local_actions) == 1:
                 return local_actions
+            if local_actions == []:
+                return []
 
-            if local_actions != []:
-                if min_len == -1:
-                    min_len_action_set = local_actions
-                    min_len = len(local_actions)
-                elif len(local_actions) < min_len:
-                    min_len_action_set = local_actions
+            """ print("local_actions:",local_actions) """
+
+            if min_len == -1:
+                min_len_action_set = local_actions
+                min_len = len(local_actions)
+            elif len(local_actions) < min_len:
+                min_len_action_set = local_actions
+
+            """ print("min_len_action_set:",min_len_action_set) """
 
         return min_len_action_set
 
+    def get_local_actions(self, missing_num, neighbour_value):
+        actions = []
+        for free_pos in self.adjacent_zero_positions(neighbour_value):
+            r,c = free_pos
+            """ print((r,c,missing_num),"is valid?:\n",self.is_valid_action(r,c,missing_num)) """
+            if self.is_valid_action(r,c,missing_num):
+                actions.append((r,c,missing_num))
+            else:
+                continue
+        return actions
+
     def is_valid_action(self, r, c, num):
+        """ print("distancia bacana a next e previous?:",self.is_distance_ok(r, c, num))
+        print("interfere com o board?:",self.is_distance_ok(r, c, num)) """
         return self.is_distance_ok(r, c, num) and not self.interferes_with_board(r, c, num)
 
     def interferes_with_board(self, r, c, num):
-        for adj_r,adj_c in self.adjacent_zero_positions(num):
-            if self.inteferes_with_adjacent(num,adj_r,adj_c):
-                return False
-        return True
+        for adj_r,adj_c in self.adjacent_number_positions((r,c)):
+            """ print("posicao adjacente a ",r,c," em que há um numero:",adj_r,adj_c) """
+            value = self.matrix[adj_r][adj_c]
+            #se true, ta mal
+            #se valor que ele quer por é neighbour do adjacente, não pode pôr se o numero de adjacentes livres  do adjacente for menor que o numero de neighbours que ainda faltam colocar
+            num_adj_zero_positions = self.get_num_zero_positions(value)
+            num_neighbours_not_in_board = self.get_num_neigbours_not_in_board(value)
 
-    def interferes_with_adjacent(self, num, r, c):
-        value = self.matrix[row][col]
-        #se true, ta mal
-        #se valor que ele quer por é neighbour do adjacente, não pode pôr se o numero de adjacentes livres  do adjacente for menor que o numero de neighbours que ainda faltam colocar
-        if num in (value-1,value+1):
-            return len(self.adjacent_zero_positions(value)) < len(self.get_neighbours_not_in_board(value))
-            
-        return len(self.adjacent_zero_positions(value)) - 1 < len(self.get_neighbours_not_in_board(value))
+            if num == value-1 or num == value+1:
+                if num_adj_zero_positions < num_neighbours_not_in_board:
+                    return True
+                else:
+                    continue
+            if num_adj_zero_positions - 1 < num_neighbours_not_in_board:
+                return True
+            else:
+                continue
+        return False
 
     def is_distance_ok(self, r, c, num):
         for pos in self.get_previous_next_number_pos_board(num):
@@ -199,6 +233,12 @@ class Board:
                 if (self.manhattan_distance(pos, (r,c)) > abs(num-self.get_number(pnr, pnc))):
                     return False
         return True
+    
+    def get_num_zero_positions(self, value):
+        return len(self.adjacent_zero_positions(value))
+    
+    def get_num_neigbours_not_in_board(self, value):
+        return len(self.get_neighbours_not_in_board(value))
 
     def get_previous_next_number_pos_board(self, num):
         prev = ()
@@ -220,9 +260,12 @@ class Board:
         
         return (prev,nxt)
 
-    
     def manhattan_distance(self, pos1, pos2):
         return sum(abs(a-b) for a, b in zip(pos1,pos2))
+
+    def intersection(self, lst1, lst2):
+        lst3 = [value for value in lst1 if value in lst2]
+        return lst3
     
     def to_string(self):
         output = ""
@@ -272,8 +315,8 @@ class Numbrix(Problem):
             missing_numbers.add(missing_num)
         new_board.missing_numbers = missing_numbers
         new_board_positions = []
-        for i in range(state.board.board_positions):
-            new_board_positions[i].append(state.board.board_positions[i].copy())
+        for i in range(state.board.size**2):
+            new_board_positions.append(state.board.board_positions[i])
         new_board.board_positions = new_board_positions
 
         #if number is being replaced, add number to missing numbers
