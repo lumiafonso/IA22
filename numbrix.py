@@ -7,7 +7,7 @@
 # 95575 Francisco Goncalves
 
 import sys
-from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search
+from search import Problem, Node, astar_search, breadth_first_tree_search, depth_first_tree_search, greedy_search, recursive_best_first_search, InstrumentedProblem, compare_searchers
 from math import sqrt
 import collections
 
@@ -159,16 +159,12 @@ class Board:
         for missing_num in self.missing_numbers:
             local_actions = []
             neighbours = self.get_neighbours_in_board(missing_num)
-            
-            """ print("board:\n"+self.to_string())
-            print("missingnum:",missing_num) 
-            print("neighbours",neighbours) """
 
             if len(neighbours) == 0:
                 continue
             elif len(neighbours) == 2:
                 actions1 = self.get_local_actions(missing_num, neighbours[0])
-                actions2= self.get_local_actions(missing_num, neighbours[1])
+                actions2 = self.get_local_actions(missing_num, neighbours[1])
                 local_actions = self.intersection(actions1,actions2)
             else:
                 local_actions = self.get_local_actions(missing_num, neighbours[0])
@@ -178,15 +174,11 @@ class Board:
             if local_actions == []:
                 return []
 
-            """ print("local_actions:",local_actions) """
-
             if min_len == -1:
                 min_len_action_set = local_actions
                 min_len = len(local_actions)
             elif len(local_actions) < min_len:
                 min_len_action_set = local_actions
-
-            """ print("min_len_action_set:",min_len_action_set) """
 
         return min_len_action_set
 
@@ -194,7 +186,6 @@ class Board:
         actions = []
         for free_pos in self.adjacent_zero_positions(neighbour_value):
             r,c = free_pos
-            """ print((r,c,missing_num),"is valid?:\n",self.is_valid_action(r,c,missing_num)) """
             if self.is_valid_action(r,c,missing_num):
                 actions.append((r,c,missing_num))
             else:
@@ -202,13 +193,10 @@ class Board:
         return actions
 
     def is_valid_action(self, r, c, num):
-        """ print("distancia bacana a next e previous?:",self.is_distance_ok(r, c, num))
-        print("interfere com o board?:",self.is_distance_ok(r, c, num)) """
         return self.is_distance_ok(r, c, num) and not self.interferes_with_board(r, c, num)
 
     def interferes_with_board(self, r, c, num):
         for adj_r,adj_c in self.adjacent_number_positions((r,c)):
-            """ print("posicao adjacente a ",r,c," em que há um numero:",adj_r,adj_c) """
             value = self.matrix[adj_r][adj_c]
             #se true, ta mal
             #se valor que ele quer por é neighbour do adjacente, não pode pôr se o numero de adjacentes livres  do adjacente for menor que o numero de neighbours que ainda faltam colocar
@@ -369,8 +357,8 @@ class Numbrix(Problem):
         if node.action == None:
             return 10
         heur = 0
-        x,y,n = node.action
-        lists = board.adjacent_horizontal_numbers(x,y) + board.adjacent_vertical_numbers(x,y)
+        r,c,n = node.action
+        lists = board.all_adjacent_numbers(r, c)
         for num in lists:
             if num == 0:
                 heur += 1
@@ -389,7 +377,9 @@ if __name__ == "__main__":
     board = Board.parse_instance(filepath)
     # Criar uma instância de Numbrix:
     problem = Numbrix(board)
-    # Obter o nó solução usando a procura:
-    goal_node = depth_first_tree_search(problem)
-    # Verificar se foi atingida a solução
-    print(goal_node.state.board.to_string(),sep="")
+    """ # Obter o nó solução usando a procura:
+    goal_node = depth_first_tree_search(problem) """
+    
+    """ # Verificar se foi atingida a solução
+    print(goal_node.state.board.to_string(),sep="") """
+    compare_searchers(problems = [problem], header = ['Searcher', 'Nos'])

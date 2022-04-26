@@ -8,7 +8,7 @@ functions.
 
 import sys
 from collections import deque
-
+import time
 from utils import *
 
 
@@ -188,6 +188,8 @@ def breadth_first_tree_search(problem):
 
     while frontier:
         node = frontier.popleft()
+        """ print("node action:",node.action) """
+        """ print(node.state.board.to_string()) """
         if problem.goal_test(node.state):
             return node
         frontier.extend(node.expand(problem))
@@ -1556,14 +1558,13 @@ class InstrumentedProblem(Problem):
 
 def compare_searchers(problems, header,
                       searchers=[breadth_first_tree_search,
-                                 breadth_first_graph_search,
-                                 depth_first_graph_search,
-                                 iterative_deepening_search,
-                                 depth_limited_search,
-                                 recursive_best_first_search]):
+                                 depth_first_tree_search, astar_search, greedy_search]):
     def do(searcher, problem):
         p = InstrumentedProblem(problem)
+        start = time.time()
         searcher(p)
+        end = time.time()
+        print(end - start)
         return p
 
     table = [[name(s)] + [do(s, p) for p in problems] for s in searchers]
